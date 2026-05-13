@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: palco-capital
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/dashboard
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://apsiwkvpcmhpjxzhqsya.supabase.co
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
