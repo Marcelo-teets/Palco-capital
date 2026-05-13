@@ -2,6 +2,13 @@
   "framework": "nextjs",
   "regions": ["gru1"],
   "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://apsiwkvpcmhpjxzhqsya.supabase.co"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://apsiwkvpcmhpjxzhqsya.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwc2l3a3ZwY21ocGp4emhxc3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MTc5MTgsImV4cCI6MjA2MjM5MzkxOH0.WoH0QN8OC8kB7nqTH5PiRgxs3wBKmUveMz9K0x6q7lE"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_SUPABASE_URL": "https://apsiwkvpcmhpjxzhqsya.supabase.co",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwc2l3a3ZwY21ocGp4emhxc3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MTc5MTgsImV4cCI6MjA2MjM5MzkxOH0.WoH0QN8OC8kB7nqTH5PiRgxs3wBKmUveMz9K0x6q7lE"
+    }
   }
 }
