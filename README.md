@@ -1,36 +1,149 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Palco Capital
 
-## Getting Started
+Plataforma de crédito privado e antecipação de recebíveis para o mercado de eventos ao vivo no Brasil.
 
-First, run the development server:
+A Palco Capital nasce para resolver um problema recorrente de produtores, casas de show, festivais, turnês, artistas, operadores e demais participantes da cadeia de live entertainment: o evento tem venda, contratos, agenda e potencial econômico, mas o capital de giro costuma chegar tarde ou com alto atrito operacional.
+
+O MVP combina landing page, captação de leads, banco Supabase, rotas executivas, agentes iniciais e futura mesa de crédito para estruturar operações com base em evidências, recebíveis, dados do evento e governança humana.
+
+> Status: MVP em estruturação. O produto, contratos, política de crédito e régua jurídica ainda dependem de validação operacional, jurídica e de risco antes de uso em produção plena.
+
+---
+
+## Tese do produto
+
+A Palco Capital atua como uma plataforma tech-enabled de originação, análise e estruturação de crédito para eventos ao vivo, com foco inicial em antecipação de recebíveis de ingressos e, quando aplicável, outras fontes de receita vinculadas ao evento.
+
+O foco não é apenas capturar formulário. O objetivo é montar uma esteira completa:
+
+1. identificar o evento e o responsável econômico;
+2. confirmar CNPJ, evidências públicas e fonte de recebíveis;
+3. estimar potencial de receita;
+4. classificar risco;
+5. definir se existe apetite de crédito;
+6. escalar exceções para decisão humana;
+7. acompanhar operação, documentação, desembolso e liquidação.
+
+---
+
+## Público-alvo inicial
+
+- Produtores de eventos.
+- Casas de show e venues.
+- Festivais.
+- Turnês.
+- Artistas e escritórios artísticos.
+- Agências e operadores de produção.
+- Bares e espaços com programação recorrente.
+- Escolas, clubes, igrejas e prefeituras quando houver evento com fluxo econômico identificável.
+
+Fora do foco inicial: RH, ONGs e casos sem vínculo claro com evento, bilheteria, contrato ou recebível mapeável.
+
+---
+
+## Stack atual
+
+- Next.js / React / TypeScript.
+- Supabase para persistência.
+- API routes no próprio app.
+- Vercel como destino natural de deploy.
+- Claude/LLM para agentes executivos e análise assistida.
+- GitHub como fonte de verdade de backlog, documentação, issues e PRs.
+
+---
+
+## Módulos já iniciados
+
+- Landing page institucional.
+- Formulário de lead.
+- API `POST /api/leads` para cadastro de leads.
+- API `GET /api/leads` para consulta inicial.
+- API executiva de dashboard.
+- API do Agente CEO.
+- Estrutura inicial de logs de agentes.
+- Integração Supabase via helper em `lib/supabase.ts`.
+
+---
+
+## Variáveis de ambiente esperadas
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_KEY=
+ANTHROPIC_API_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Regras de segurança:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `SUPABASE_SERVICE_KEY` nunca deve ser exposta no client.
+- Dados sensíveis de leads, análise e crédito devem ficar restritos ao backend/Supabase.
+- Qualquer decisão automática precisa registrar racional, score, fonte de dados e responsável.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Estrutura de documentação
 
-To learn more about Next.js, take a look at the following resources:
+A pasta `docs/` concentra a base viva do projeto:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `docs/01_visao_produto.md` — visão do produto e ICP.
+- `docs/02_arquitetura.md` — arquitetura técnica e fluxo de dados.
+- `docs/03_backlog.md` — backlog inicial PALCO-001 a PALCO-010.
+- `docs/04_modelo_dados.md` — entidades, campos e extensões necessárias.
+- `docs/05_go_no_go.md` — checklist mínimo de produção.
+- `docs/06_agentes.md` — desenho dos agentes e governança.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Backlog inicial
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| ID | Tema | Prioridade | Resultado esperado |
+|---|---|---:|---|
+| PALCO-001 | Fundação do projeto | P0 | README, docs e governança GitHub-first |
+| PALCO-002 | Identidade institucional | P0 | Landing com visual mais banco de investimento |
+| PALCO-003 | Área admin | P0 | Tela interna de leads e pipeline |
+| PALCO-004 | Intake de leads | P0 | Formulário com CNPJ, evento, evidências e origem |
+| PALCO-005 | Score inicial | P0 | Pré-análise 0-1000 com flags de risco |
+| PALCO-006 | Mesa de crédito | P1 | Visão de análise, decisão, exceções e histórico |
+| PALCO-007 | Operações | P1 | Checklist de documentos, desembolso e liquidação |
+| PALCO-008 | Dashboard executivo | P1 | KPIs de funil, carteira, risco e conversão |
+| PALCO-009 | Agente CEO | P1 | Copiloto com contexto real do banco |
+| PALCO-010 | Produção | P0 | Env vars, deploy, logs e checklist Go/No-Go |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Como rodar localmente
+
+```bash
+npm install
+npm run dev
+```
+
+Depois acesse:
+
+```bash
+http://localhost:3000
+```
+
+Antes de abrir PR técnica, validar:
+
+```bash
+npm run lint
+npm run build
+```
+
+---
+
+## Convenção de trabalho
+
+- Branches: `gpt/<feature-slug>`.
+- Commits pequenos: `docs:`, `feat:`, `fix:`, `chore:`.
+- PRs revisáveis, preferencialmente por módulo.
+- Não misturar refatoração visual, schema e feature crítica na mesma PR.
+- Toda alteração relevante deve atualizar docs ou issue correspondente.
+
+---
+
+## Próxima entrega recomendada
+
+Depois desta fundação, a próxima PR deve atacar `PALCO-002`: refinar a landing page para uma identidade mais institucional, com linguagem menos promocional e mais compatível com crédito estruturado, mantendo captação de leads e clareza comercial.
