@@ -18,6 +18,26 @@ const thesisCards = [
   ["Processo auditável", "Cada etapa deve preservar dados observados, inferências, estimativas, status e próximos passos."],
 ];
 
+const emptyForm = {
+  nome: "",
+  empresa: "",
+  cnpj: "",
+  email: "",
+  telefone: "",
+  evento: "",
+  tipo_evento: "",
+  data_evento: "",
+  cidade: "",
+  estado: "",
+  venue: "",
+  valor_ingressos: "",
+  receita_esperada: "",
+  valor_solicitado: "",
+  plataforma_ingressos: "",
+  link_venda: "",
+  como_conheceu: "",
+};
+
 const formatCurrency = (value: number) => value.toLocaleString("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -30,16 +50,7 @@ export default function Home() {
   const [advancePct, setAdvancePct] = useState(60);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [message, setMessage] = useState("");
-  const [form, setForm] = useState({
-    nome: "",
-    empresa: "",
-    email: "",
-    telefone: "",
-    evento: "",
-    data_evento: "",
-    valor_ingressos: "",
-    como_conheceu: "",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const advanceAmount = Math.round(volume * (advancePct / 100));
   const indicativeCost = Math.round(advanceAmount * 0.025);
@@ -49,26 +60,33 @@ export default function Home() {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const resetForm = () => setForm({
-    nome: "",
-    empresa: "",
-    email: "",
-    telefone: "",
-    evento: "",
-    data_evento: "",
-    valor_ingressos: "",
-    como_conheceu: "",
-  });
+  const resetForm = () => setForm(emptyForm);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("loading");
 
+    const intakeNotes = [
+      form.como_conheceu && `canal=${form.como_conheceu}`,
+      form.venue && `venue=${form.venue}`,
+      form.plataforma_ingressos && `plataforma=${form.plataforma_ingressos}`,
+      form.link_venda && `link=${form.link_venda}`,
+      form.valor_solicitado && `valor_solicitado=${form.valor_solicitado}`,
+    ].filter(Boolean).join(" | ");
+
+    const payload = {
+      ...form,
+      empresa: form.cnpj ? `${form.empresa} | CNPJ: ${form.cnpj}` : form.empresa,
+      valor_ingressos: form.valor_ingressos || form.receita_esperada,
+      como_conheceu: intakeNotes || form.como_conheceu,
+      origem: "site_intake_v1",
+    };
+
     try {
       const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Erro ao salvar lead");
@@ -191,7 +209,7 @@ export default function Home() {
       </section>
 
       <section id="cadastro" className="px-6 py-28">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-3xl">
           <div className="mb-10 text-center">
             <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">Originação</p>
             <h2 className="mt-4 font-serif text-4xl text-[#F7F7F4] md:text-5xl">Solicite uma análise de elegibilidade</h2>
@@ -203,15 +221,40 @@ export default function Home() {
             <form onSubmit={handleSubmit} className="card-glass space-y-5 rounded-3xl p-8">
               <div className="grid gap-5 md:grid-cols-2">
                 <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="empresa" value={form.empresa} onChange={handleChange} required placeholder="Empresa / CNPJ" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="E-mail" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="empresa" value={form.empresa} onChange={handleChange} required placeholder="Empresa responsável" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="cnpj" value={form.cnpj} onChange={handleChange} placeholder="CNPJ da operação" className="input-dark rounded-xl px-4 py-3 text-sm" />
                 <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="WhatsApp" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="E-mail" className="input-dark rounded-xl px-4 py-3 text-sm md:col-span-2" />
               </div>
-              <input name="evento" value={form.evento} onChange={handleChange} required placeholder="Nome do evento" className="input-dark w-full rounded-xl px-4 py-3 text-sm" />
+
               <div className="grid gap-5 md:grid-cols-2">
+                <input name="evento" value={form.evento} onChange={handleChange} required placeholder="Nome do evento" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <select name="tipo_evento" value={form.tipo_evento} onChange={handleChange} className="input-dark rounded-xl px-4 py-3 text-sm">
+                  <option value="">Tipo de evento</option>
+                  <option value="show">Show</option>
+                  <option value="festival">Festival</option>
+                  <option value="turne">Turnê</option>
+                  <option value="venue">Casa de show / venue</option>
+                  <option value="corporativo">Evento corporativo</option>
+                  <option value="outro">Outro</option>
+                </select>
                 <input name="data_evento" type="date" value={form.data_evento} onChange={handleChange} required className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="valor_ingressos" type="number" value={form.valor_ingressos} onChange={handleChange} required placeholder="Volume de ingressos / recebíveis (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="venue" value={form.venue} onChange={handleChange} placeholder="Venue/local do evento" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="cidade" value={form.cidade} onChange={handleChange} placeholder="Cidade" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="estado" value={form.estado} onChange={handleChange} placeholder="UF" maxLength={2} className="input-dark rounded-xl px-4 py-3 text-sm" />
               </div>
+
+              <div className="grid gap-5 md:grid-cols-3">
+                <input name="valor_ingressos" type="number" value={form.valor_ingressos} onChange={handleChange} required placeholder="Receita já vendida (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="receita_esperada" type="number" value={form.receita_esperada} onChange={handleChange} placeholder="Receita esperada (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="valor_solicitado" type="number" value={form.valor_solicitado} onChange={handleChange} placeholder="Valor solicitado (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <input name="plataforma_ingressos" value={form.plataforma_ingressos} onChange={handleChange} placeholder="Plataforma de ingressos" className="input-dark rounded-xl px-4 py-3 text-sm" />
+                <input name="link_venda" value={form.link_venda} onChange={handleChange} placeholder="Link de venda/evidência pública" className="input-dark rounded-xl px-4 py-3 text-sm" />
+              </div>
+
               <select name="como_conheceu" value={form.como_conheceu} onChange={handleChange} className="input-dark w-full rounded-xl px-4 py-3 text-sm">
                 <option value="">Como chegou até a Palco Capital?</option>
                 <option value="indicacao">Indicação</option>
