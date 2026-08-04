@@ -43,7 +43,7 @@ for (const vulnerability of vulnerabilities.sort((a, b) => {
   );
 }
 
-if ((counts.critical || 0) > 0) {
-  console.error("Vulnerabilidade crítica detectada.");
+if ((counts.high || 0) > 0 || (counts.critical || 0) > 0) {
+  console.error("Vulnerabilidade alta ou crítica detectada.");
   process.exit(1);
 }
