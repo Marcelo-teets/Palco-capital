@@ -35,9 +35,11 @@ O foco não é apenas capturar formulário. O objetivo é montar uma esteira com
 - Artistas e escritórios artísticos.
 - Agências e operadores de produção.
 - Bares e espaços com programação recorrente.
-- Escolas, clubes, igrejas e prefeituras quando houver evento com fluxo econômico identificável.
+- Operadores privados com evento e fluxo econômico identificáveis.
 
-Fora do foco inicial: RH, ONGs e casos sem vínculo claro com evento, bilheteria, contrato ou recebível mapeável.
+Fora do foco inicial: entes públicos enquanto o enquadramento específico estiver
+em revisão, crédito ao consumidor e casos sem vínculo claro com evento,
+bilheteria, contrato ou recebível mapeável.
 
 ---
 
@@ -52,10 +54,11 @@ Fora do foco inicial: RH, ONGs e casos sem vínculo claro com evento, bilheteria
 
 ---
 
-## Módulos já iniciados
+## Módulos em operação no MVP
 
-- Landing page institucional.
-- Formulário de lead.
+- Site institucional com oito rotas públicas e metadados próprios.
+- Simulador educacional de ciclo de caixa.
+- Formulário de lead em três etapas com validação de CNPJ.
 - API `POST /api/leads` para cadastro de leads.
 - API `GET /api/leads` para consulta inicial.
 - API executiva de dashboard.
@@ -125,6 +128,10 @@ Depois acesse:
 http://localhost:3000
 ```
 
+Rotas públicas: `/`, `/como-funciona`, `/produtos`, `/para-quem`,
+`/governanca`, `/faq`, `/solicitar` e `/legal`. A área `/admin` permanece
+separada e exige autenticação própria.
+
 Antes de abrir PR técnica, validar:
 
 ```bash
@@ -146,4 +153,5 @@ npm run build
 
 ## Próxima entrega recomendada
 
-Depois desta fundação, a próxima PR deve atacar `PALCO-002`: refinar a landing page para uma identidade mais institucional, com linguagem menos promocional e mais compatível com crédito estruturado, mantendo captação de leads e clareza comercial.
+Concluir os bloqueios operacionais descritos em `docs/STATUS_2026-08-04.md` antes
+de tratar o site ou o formulário como disponibilidade de crédito em produção plena.

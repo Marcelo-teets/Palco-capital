@@ -21,6 +21,11 @@ A policy `anon_insert_leads` exige os mesmos valores e também valida:
 - data do evento não anterior a ontem;
 - valor solicitado entre zero e R$ 50 milhões.
 
+Além do mínimo imposto pela RLS, a API valida os dígitos verificadores do CNPJ,
+UF, telefone, enums conhecidos, URL opcional e consistência dos valores. Erros
+internos do banco são registrados com identificador de requisição, sem exposição
+do detalhe técnico ao visitante.
+
 ## Regra de segurança
 
 O papel `anon` possui somente `INSERT` em `public.leads`. Ele não pode consultar, atualizar ou excluir registros. Leituras e decisões administrativas passam pelas APIs protegidas e pelo `service_role` no servidor.
@@ -61,11 +66,12 @@ Verifique a mensagem retornada pela API. As causas mais comuns são CNPJ incompl
 
 Compare estes três arquivos:
 
-- `app/page.tsx`;
+- `components/site/SolicitacaoWizard.tsx`;
 - `app/api/leads/route.ts`;
 - `supabase/migrations/20260804133926_palco_110_hardening_policy_anon_insert_leads.sql`.
 
-Os nomes dos campos, origem, status e consentimento precisam coincidir.
+Os nomes dos campos, origem, status e consentimento precisam coincidir. O arquivo
+`app/page.tsx` deixou de concentrar o intake após a separação das rotas públicas.
 
 ### API administrativa indisponível
 

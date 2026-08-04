@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import process from "node:process";
 
 const files = {
-  page: await readFile("app/page.tsx", "utf8"),
+  page: await readFile("components/site/SolicitacaoWizard.tsx", "utf8"),
   route: await readFile("app/api/leads/route.ts", "utf8"),
+  validation: await readFile("lib/intake-validation.ts", "utf8"),
   policy: await readFile(
     "supabase/migrations/20260804133926_palco_110_hardening_policy_anon_insert_leads.sql",
     "utf8",
@@ -31,8 +32,15 @@ const checks = [
       files.route.includes("consentimento_em: new Date().toISOString()"),
   ],
   [
-    "API valida CNPJ com 14 dígitos",
-    files.route.includes("cnpj.length !== 14"),
+    "API valida tamanho e dígitos verificadores do CNPJ",
+    files.route.includes("cnpj.length !== 14") &&
+      files.route.includes("!isValidCnpj(cnpj)") &&
+      files.validation.includes("calculateDigit"),
+  ],
+  [
+    "API não devolve erro interno do banco ao público",
+    files.route.includes("Não foi possível registrar a solicitação agora") &&
+      !files.route.includes("{ error: (error as Error).message },\n      { status: 400"),
   ],
   [
     "API usa chave publicável para o insert",
