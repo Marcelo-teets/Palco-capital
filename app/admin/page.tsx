@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type Lead = {
   id?: string;
@@ -71,7 +78,7 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [search, setSearch] = useState("");
 
-  async function loadLeads(adminToken: string) {
+  const loadLeads = useCallback(async (adminToken: string) => {
     setState("loading");
     setError("");
 
@@ -94,15 +101,19 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setState("error");
     }
-  }
+  }, []);
 
   useEffect(() => {
     const savedToken = sessionStorage.getItem("palco_admin_token");
-    if (savedToken) {
+    if (!savedToken) return;
+
+    const timer = window.setTimeout(() => {
       setTokenInput(savedToken);
       void loadLeads(savedToken);
-    }
-  }, []);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadLeads]);
 
   function handleUnlock(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -164,9 +175,9 @@ export default function AdminPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-10 flex flex-col gap-6 border-b border-[#F7F7F4]/10 pb-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <a href="/" className="text-sm text-[#D8C08A] hover:text-[#F7F7F4]">
+            <Link href="/" className="text-sm text-[#D8C08A] hover:text-[#F7F7F4]">
               ← Voltar para landing
-            </a>
+            </Link>
             <p className="mt-6 font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">
               Palco Capital Admin
             </p>
