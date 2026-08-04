@@ -34,7 +34,7 @@ Financeiro: ${JSON.stringify(financeiro)}
 Escalações pendentes: ${escalacoes?.length || 0}
 Leads recentes: ${leadSummary || "nenhum"}`;
 
-    const { text, tokens, duracao_ms } = await callClaude(
+    const { text, tokens } = await callClaude(
       "Você é o Agente CEO da Palco Capital. Gere relatórios executivos precisos e acionáveis em português.",
       [{ role: "user", content: prompt }],
       1000,
