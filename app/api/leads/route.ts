@@ -19,7 +19,24 @@ function cleanText(value: unknown, maxLength = 240) {
 function cleanMoney(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 50_000_000
+    ? parsed
+    : null;
+}
+
+function isValidEmail(value: string) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
+}
+
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  yesterday.setUTCHours(0, 0, 0, 0);
+  return date >= yesterday;
 }
 
 export async function GET(req: NextRequest) {
@@ -43,9 +60,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data, {
       headers: { "Cache-Control": "no-store" },
     });
-  } catch (e: unknown) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: (e as Error).message },
+      { error: (error as Error).message },
       { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -54,16 +71,45 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const nome = cleanText(body.nome, 160);
+
+    const nome = cleanText(body.nome, 120);
     const empresa = cleanText(body.empresa, 200);
     const email = cleanText(body.email, 200).toLowerCase();
     const telefone = cleanText(body.telefone, 40);
+    const cnpj = cleanText(body.cnpj, 24).replace(/\D/g, "");
     const evento = cleanText(body.evento, 200);
     const dataEvento = cleanText(body.data_evento, 10);
+    const consentimentoLgpd = body.consentimento_lgpd === true;
 
-    if (!nome || !empresa || !email || !telefone || !evento || !dataEvento) {
+    if (
+      !nome ||
+      !empresa ||
+      !email ||
+      !telefone ||
+      !evento ||
+      !dataEvento ||
+      cnpj.length !== 14 ||
+      !consentimentoLgpd
+    ) {
       return NextResponse.json(
-        { error: "Preencha nome, empresa, e-mail, telefone, evento e data do evento." },
+        {
+          error:
+            "Preencha os campos obrigatórios, informe um CNPJ com 14 dígitos e aceite o consentimento de uso dos dados.",
+        },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Informe um e-mail válido." },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    if (!isValidDate(dataEvento)) {
+      return NextResponse.json(
+        { error: "Informe uma data de evento válida e não anterior a ontem." },
         { status: 400, headers: { "Cache-Control": "no-store" } },
       );
     }
@@ -73,15 +119,18 @@ export async function POST(req: NextRequest) {
     const valorSolicitado = cleanMoney(body.valor_solicitado);
     const linkVenda = cleanText(body.link_venda, 500);
     const estado = cleanText(body.estado, 2).toUpperCase();
-    const cnpj = cleanText(body.cnpj, 24).replace(/\D/g, "");
 
     await supaPublicPost("leads", {
       nome_produtor: nome,
       nome,
+      cargo: cleanText(body.cargo, 120) || null,
       empresa,
+      tipo_organizacao: cleanText(body.tipo_organizacao, 80) || null,
+      cnpj,
       email,
       telefone,
-      cnpj: cnpj || null,
+      tempo_operacao: cleanText(body.tempo_operacao, 80) || null,
+      eventos_12m: cleanText(body.eventos_12m, 80) || null,
       evento,
       tipo_evento: cleanText(body.tipo_evento, 60) || "outro",
       data_evento: dataEvento,
@@ -98,9 +147,13 @@ export async function POST(req: NextRequest) {
       receita_vendida: receitaVendida,
       receita_esperada: receitaEsperada,
       valor_solicitado: valorSolicitado,
-      como_conheceu: cleanText(body.como_conheceu, 80) || null,
+      urgencia: cleanText(body.urgencia, 80) || null,
+      destino_recurso: cleanText(body.destino_recurso, 240) || null,
+      como_conheceu: cleanText(body.como_conheceu, 500) || null,
+      consentimento_lgpd: true,
+      consentimento_em: new Date().toISOString(),
       status: "novo",
-      origem: "site",
+      origem: "site_intake_v2",
     });
 
     return NextResponse.json(
@@ -110,9 +163,9 @@ export async function POST(req: NextRequest) {
       },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
-  } catch (e: unknown) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: (e as Error).message },
+      { error: (error as Error).message },
       { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
