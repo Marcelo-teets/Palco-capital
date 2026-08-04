@@ -39,10 +39,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit dependencies
+      - name: Audit current dependencies
         run: |
-          npm audit --json > npm-audit.json || true
-          node scripts/summarize-npm-audit.mjs npm-audit.json
+          npm audit --json > npm-audit-before.json || true
+          node scripts/summarize-npm-audit.mjs npm-audit-before.json
+
+      - name: Prepare compatible dependency fixes
+        run: |
+          npm install next@16.3.0 --save-exact --package-lock-only
+          npm audit fix --package-lock-only
+          npm ci
+
+      - name: Audit fixed dependencies
+        run: |
+          npm audit --json > npm-audit-after.json || true
+          node scripts/summarize-npm-audit.mjs npm-audit-after.json
 
       - name: Validate intake contract
         run: npm run check:intake
@@ -52,3 +63,15 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Upload dependency fix
+        uses: actions/upload-artifact@v4
+        with:
+          name: palco-dependency-fix
+          path: |
+            package.json
+            package-lock.json
+            npm-audit-before.json
+            npm-audit-after.json
+          if-no-files-found: error
+          retention-days: 1
