@@ -1,29 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
-const processSteps = [
-  ["01", "Cadastro e contexto", "Empresa, evento, data, cidade, volume de recebíveis e necessidade de capital."],
-  ["02", "Elegibilidade", "Triagem de CNPJ, evidências públicas, plataforma de ingressos e fonte de pagamento."],
-  ["03", "Análise de crédito", "Avaliação de risco, timing, concentração, histórico, documentos e política de crédito."],
-  ["04", "Estruturação", "Condições, formalização e fluxo operacional de recebíveis quando houver aderência."],
-];
-
-const thesisCards = [
-  ["Live entertainment", "Foco no ciclo de caixa de produtores, casas de show, festivais, turnês e operadores de eventos."],
-  ["Recebíveis mapeáveis", "A análise parte de bilheteria, contratos, plataformas de venda, evidências e responsável econômico."],
-  ["Governança", "Oportunidades relevantes ou com flags críticas seguem para decisão humana e registro de racional."],
-  ["Processo auditável", "Cada etapa deve preservar dados observados, inferências, estimativas, status e próximos passos."],
-];
-
 const emptyForm = {
   nome: "",
+  cargo: "",
   empresa: "",
+  tipo_organizacao: "",
   cnpj: "",
   email: "",
   telefone: "",
+  tempo_operacao: "",
+  eventos_12m: "",
   evento: "",
   tipo_evento: "",
   data_evento: "",
@@ -35,244 +29,289 @@ const emptyForm = {
   valor_solicitado: "",
   plataforma_ingressos: "",
   link_venda: "",
+  urgencia: "",
+  destino_recurso: "",
   como_conheceu: "",
+  consentimento_lgpd: false,
 };
 
-const formatCurrency = (value: number) => value.toLocaleString("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
+const processSteps = [
+  ["1", "Contexto", "Dados da empresa, do evento e da necessidade de capital."],
+  ["2", "Elegibilidade", "Validação de CNPJ, bilheteria, evidências e fonte de pagamento."],
+  ["3", "Crédito", "Análise de risco, histórico, documentação e capacidade de pagamento."],
+  ["4", "Estruturação", "Condições, formalização e fluxo operacional da operação."],
+];
+
+const fieldClass = "input-dark w-full rounded-xl px-4 py-3 text-sm";
 
 export default function Home() {
-  const [volume, setVolume] = useState(250000);
-  const [advancePct, setAdvancePct] = useState(60);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [message, setMessage] = useState("");
   const [form, setForm] = useState(emptyForm);
 
-  const advanceAmount = Math.round(volume * (advancePct / 100));
-  const indicativeCost = Math.round(advanceAmount * 0.025);
-  const indicativeNet = advanceAmount - indicativeCost;
+  const handleChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+    const nextValue =
+      event.target instanceof HTMLInputElement && event.target.type === "checkbox"
+        ? event.target.checked
+        : value;
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    setForm((current) => ({ ...current, [name]: nextValue }));
   };
 
-  const resetForm = () => setForm(emptyForm);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("loading");
-
-    const intakeNotes = [
-      form.como_conheceu && `canal=${form.como_conheceu}`,
-      form.venue && `venue=${form.venue}`,
-      form.plataforma_ingressos && `plataforma=${form.plataforma_ingressos}`,
-      form.link_venda && `link=${form.link_venda}`,
-      form.valor_solicitado && `valor_solicitado=${form.valor_solicitado}`,
-    ].filter(Boolean).join(" | ");
-
-    const payload = {
-      ...form,
-      empresa: form.cnpj ? `${form.empresa} | CNPJ: ${form.cnpj}` : form.empresa,
-      valor_ingressos: form.valor_ingressos || form.receita_esperada,
-      como_conheceu: intakeNotes || form.como_conheceu,
-      origem: "site_intake_v1",
-    };
+    setMessage("");
 
     try {
       const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
-      if (!response.ok) throw new Error("Erro ao salvar lead");
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error || "Não foi possível enviar a solicitação.");
+      }
 
       setStatus("success");
-      setMessage("Recebemos sua solicitação. A próxima etapa é a triagem de elegibilidade com base nos dados informados.");
-      resetForm();
-    } catch {
+      setMessage(
+        result.message ||
+          "Recebemos sua solicitação. A equipe seguirá com a triagem de elegibilidade.",
+      );
+      setForm(emptyForm);
+    } catch (error: unknown) {
       setStatus("error");
-      setMessage("Não foi possível enviar sua solicitação agora. Revise os dados e tente novamente.");
+      setMessage((error as Error).message);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#0B1F33] text-[#F7F7F4]">
-      <nav className="fixed top-0 z-50 w-full border-b border-[#F7F7F4]/10 bg-[#0B1F33]/90 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-[#F7F7F4]/10 bg-[#0B1F33]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <a href="#top" className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[#B08A43]/70 font-mono text-sm font-semibold text-[#F7F7F4]">P</span>
-            <span className="font-serif text-lg tracking-wide">Palco Capital</span>
+          <a href="#inicio" className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#B08A43]/70 font-serif text-xl text-[#D8C08A]">
+              P
+            </span>
+            <span className="font-serif text-xl">Palco Capital</span>
           </a>
-          <div className="hidden items-center gap-8 text-sm text-[#F7F7F4]/62 md:flex">
-            <a href="#processo" className="hover:text-[#D8C08A]">Processo</a>
-            <a href="#tese" className="hover:text-[#D8C08A]">Tese</a>
-            <a href="#estimativa" className="hover:text-[#D8C08A]">Estimativa</a>
-            <a href="#cadastro" className="btn-gold rounded-lg px-5 py-2">Solicitar análise</a>
-          </div>
+          <a href="#solicitacao" className="btn-gold rounded-lg px-5 py-2 text-sm">
+            Solicitar análise
+          </a>
         </div>
       </nav>
 
-      <section id="top" className="relative flex min-h-screen items-center overflow-hidden px-6 pt-24">
-        <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "linear-gradient(rgba(247,247,244,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,244,0.04) 1px, transparent 1px)", backgroundSize: "72px 72px" }} />
-        <div className="relative mx-auto max-w-6xl py-20">
-          <div className="mb-8 inline-flex rounded-full border border-[#B08A43]/35 bg-[#B08A43]/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">
-            Crédito privado para eventos ao vivo
+      <section id="inicio" className="px-6 py-24 md:py-32">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">
+              Crédito para entretenimento ao vivo
+            </p>
+            <h1 className="mt-6 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">
+              Capital para o ciclo de caixa do seu evento.
+            </h1>
+            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-[#F7F7F4]/60">
+              A Palco Capital estrutura antecipação de recebíveis e capital de giro
+              para produtores, festivais, casas de show e operadores de eventos no Brasil.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#solicitacao" className="btn-gold rounded-xl px-7 py-4 text-center">
+                Iniciar solicitação
+              </a>
+              <a href="#processo" className="btn-outline rounded-xl px-7 py-4 text-center">
+                Entender o processo
+              </a>
+            </div>
           </div>
-          <h1 className="max-w-5xl font-serif text-5xl leading-tight text-[#F7F7F4] md:text-7xl">
-            Capital estruturado para o ciclo de caixa do seu evento.
-          </h1>
-          <p className="mt-8 max-w-3xl text-lg leading-relaxed text-[#F7F7F4]/62 md:text-xl">
-            A Palco Capital analisa operações de antecipação de recebíveis e capital de giro para produtores, venues, festivais e operadores de live entertainment no Brasil.
-          </p>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <a href="#cadastro" className="btn-gold rounded-xl px-8 py-4 text-center">Solicitar análise de elegibilidade</a>
-            <a href="#processo" className="btn-outline rounded-xl px-8 py-4 text-center">Conhecer o processo</a>
-          </div>
-          <div className="mt-14 grid gap-4 md:grid-cols-3">
-            {[["48h", "Triagem inicial, sujeita à qualidade dos dados"], ["CNPJ + evidência", "Base mínima para avaliação da oportunidade"], ["Humano no loop", "Exceções e flags críticas são escaladas"]].map(([value, label]) => (
-              <div key={value} className="card-glass rounded-2xl p-5">
-                <div className="font-serif text-3xl text-[#D8C08A]">{value}</div>
-                <div className="mt-2 text-sm text-[#F7F7F4]/48">{label}</div>
-              </div>
-            ))}
+
+          <div className="card-glass rounded-3xl p-7 md:p-9">
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#D8C08A]">
+              O que analisamos
+            </p>
+            <div className="mt-6 space-y-5 text-sm leading-relaxed text-[#F7F7F4]/60">
+              <p>Recebíveis de bilheteria e contratos relacionados ao evento.</p>
+              <p>Histórico do produtor, local, artistas, vendas e execução operacional.</p>
+              <p>Valor solicitado, prazo, destino do recurso e mecanismos de controle.</p>
+            </div>
+            <div className="mt-7 rounded-2xl border border-[#B08A43]/25 bg-[#B08A43]/10 p-5 text-sm text-[#D8C08A]">
+              A solicitação não representa aprovação. Toda operação depende de análise,
+              documentação e decisão interna.
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="processo" className="px-6 py-28">
+      <section id="processo" className="border-y border-[#F7F7F4]/10 px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-14 max-w-3xl">
-            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">Processo de análise</p>
-            <h2 className="mt-4 font-serif text-4xl text-[#F7F7F4] md:text-5xl">Da originação à decisão de crédito</h2>
-            <p className="mt-5 text-[#F7F7F4]/50">A esteira separa oportunidade comercial, elegibilidade, análise de crédito, estruturação e acompanhamento operacional.</p>
+          <div className="max-w-2xl">
+            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">
+              Processo
+            </p>
+            <h2 className="mt-4 font-serif text-4xl md:text-5xl">
+              Uma esteira simples e auditável
+            </h2>
           </div>
-          <div className="grid gap-5 md:grid-cols-4">
+          <div className="mt-12 grid gap-5 md:grid-cols-4">
             {processSteps.map(([number, title, description]) => (
-              <div key={number} className="card-glass rounded-2xl p-6">
-                <div className="font-mono text-xs text-[#D8C08A]/80">{number}</div>
-                <h3 className="mt-4 font-serif text-xl text-[#F7F7F4]">{title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#F7F7F4]/50">{description}</p>
-              </div>
+              <article key={number} className="card-glass rounded-2xl p-6">
+                <span className="font-mono text-xs text-[#D8C08A]">0{number}</span>
+                <h3 className="mt-4 font-serif text-2xl">{title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#F7F7F4]/50">
+                  {description}
+                </p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="tese" className="px-6 py-28">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">Tese operacional</p>
-            <h2 className="mt-4 font-serif text-4xl text-[#F7F7F4] md:text-5xl">Lastro, evidência e governança</h2>
-          </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            {thesisCards.map(([title, description]) => (
-              <div key={title} className="card-glass rounded-2xl p-7">
-                <div className="mb-5 h-px w-12 bg-[#B08A43]" />
-                <h3 className="font-serif text-2xl text-[#F7F7F4]">{title}</h3>
-                <p className="mt-3 leading-relaxed text-[#F7F7F4]/52">{description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="estimativa" className="px-6 py-28">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-12 text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">Estimativa preliminar</p>
-            <h2 className="mt-4 font-serif text-4xl text-[#F7F7F4] md:text-5xl">Dimensione uma operação potencial</h2>
-            <p className="mt-4 text-sm text-[#F7F7F4]/48">Simulação demonstrativa. Condições finais dependem de documentação, política de crédito e aprovação interna.</p>
-          </div>
-          <div className="card-glass grid gap-10 rounded-3xl p-8 md:grid-cols-2 md:p-12">
-            <div className="space-y-8">
-              <div>
-                <div className="mb-3 flex justify-between text-sm"><span className="text-[#F7F7F4]/60">Volume bruto de recebíveis</span><span className="font-mono text-[#D8C08A]">{formatCurrency(volume)}</span></div>
-                <input type="range" min="50000" max="2000000" step="10000" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full accent-[#B08A43]" />
-              </div>
-              <div>
-                <div className="mb-3 flex justify-between text-sm"><span className="text-[#F7F7F4]/60">Percentual indicativo</span><span className="font-mono text-[#D8C08A]">{advancePct}%</span></div>
-                <input type="range" min="30" max="80" step="5" value={advancePct} onChange={(event) => setAdvancePct(Number(event.target.value))} className="w-full accent-[#B08A43]" />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-[#F7F7F4]/10 bg-[#102842]/70 p-5"><p className="text-xs text-[#F7F7F4]/45">Valor potencial</p><p className="font-serif text-3xl text-[#F7F7F4]">{formatCurrency(advanceAmount)}</p></div>
-              <div className="rounded-2xl border border-[#F7F7F4]/10 bg-[#102842]/70 p-5"><p className="text-xs text-[#F7F7F4]/45">Custo demonstrativo</p><p className="font-serif text-3xl text-[#F7F7F4]/80">{formatCurrency(indicativeCost)}</p></div>
-              <div className="rounded-2xl border border-[#B08A43]/35 bg-[#B08A43]/10 p-5"><p className="text-xs text-[#D8C08A]/80">Líquido indicativo</p><p className="font-serif text-4xl text-[#D8C08A]">{formatCurrency(indicativeNet)}</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="cadastro" className="px-6 py-28">
-        <div className="mx-auto max-w-3xl">
+      <section id="solicitacao" className="px-6 py-24">
+        <div className="mx-auto max-w-4xl">
           <div className="mb-10 text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">Originação</p>
-            <h2 className="mt-4 font-serif text-4xl text-[#F7F7F4] md:text-5xl">Solicite uma análise de elegibilidade</h2>
-            <p className="mt-4 text-[#F7F7F4]/48">A análise depende da confirmação do evento, CNPJ, recebíveis e documentação.</p>
+            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#D8C08A]">
+              Originação
+            </p>
+            <h2 className="mt-4 font-serif text-4xl md:text-5xl">
+              Solicite uma análise de elegibilidade
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-[#F7F7F4]/50">
+              Preencha os dados abaixo. Campos marcados como obrigatórios são necessários
+              para a validação inicial da oportunidade.
+            </p>
           </div>
+
           {status === "success" ? (
-            <div className="card-glass rounded-3xl p-10 text-center"><h3 className="font-serif text-3xl text-[#D8C08A]">Solicitação recebida</h3><p className="mt-4 text-[#F7F7F4]/55">{message}</p><button onClick={() => setStatus("idle")} className="btn-outline mt-6 rounded-xl px-6 py-3 text-sm">Nova solicitação</button></div>
+            <div className="card-glass rounded-3xl p-10 text-center">
+              <h3 className="font-serif text-3xl text-[#D8C08A]">Solicitação recebida</h3>
+              <p className="mt-4 text-[#F7F7F4]/60">{message}</p>
+              <button
+                type="button"
+                onClick={() => setStatus("idle")}
+                className="btn-outline mt-7 rounded-xl px-6 py-3"
+              >
+                Enviar nova solicitação
+              </button>
+            </div>
           ) : (
-            <form onSubmit={handleSubmit} className="card-glass space-y-5 rounded-3xl p-8">
-              <div className="grid gap-5 md:grid-cols-2">
-                <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="empresa" value={form.empresa} onChange={handleChange} required placeholder="Empresa responsável" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="cnpj" value={form.cnpj} onChange={handleChange} placeholder="CNPJ da operação" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="WhatsApp" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="E-mail" className="input-dark rounded-xl px-4 py-3 text-sm md:col-span-2" />
-              </div>
+            <form onSubmit={handleSubmit} className="card-glass space-y-9 rounded-3xl p-6 md:p-9">
+              <fieldset>
+                <legend className="mb-5 font-serif text-2xl">Responsável e empresa</legend>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo *" className={fieldClass} />
+                  <input name="cargo" value={form.cargo} onChange={handleChange} placeholder="Cargo" className={fieldClass} />
+                  <input name="empresa" value={form.empresa} onChange={handleChange} required placeholder="Razão social ou nome da empresa *" className={fieldClass} />
+                  <select name="tipo_organizacao" value={form.tipo_organizacao} onChange={handleChange} className={fieldClass}>
+                    <option value="">Tipo de organização</option>
+                    <option value="produtora">Produtora</option>
+                    <option value="venue">Casa de show / venue</option>
+                    <option value="festival">Festival</option>
+                    <option value="agencia">Agência</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                  <input name="cnpj" value={form.cnpj} onChange={handleChange} required inputMode="numeric" placeholder="CNPJ com 14 dígitos *" className={fieldClass} />
+                  <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="WhatsApp *" className={fieldClass} />
+                  <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="E-mail *" className={`${fieldClass} md:col-span-2`} />
+                  <select name="tempo_operacao" value={form.tempo_operacao} onChange={handleChange} className={fieldClass}>
+                    <option value="">Tempo de operação</option>
+                    <option value="menos_1_ano">Menos de 1 ano</option>
+                    <option value="1_a_3_anos">1 a 3 anos</option>
+                    <option value="3_a_5_anos">3 a 5 anos</option>
+                    <option value="mais_5_anos">Mais de 5 anos</option>
+                  </select>
+                  <select name="eventos_12m" value={form.eventos_12m} onChange={handleChange} className={fieldClass}>
+                    <option value="">Eventos realizados nos últimos 12 meses</option>
+                    <option value="0">Nenhum</option>
+                    <option value="1_a_3">1 a 3</option>
+                    <option value="4_a_10">4 a 10</option>
+                    <option value="mais_10">Mais de 10</option>
+                  </select>
+                </div>
+              </fieldset>
 
-              <div className="grid gap-5 md:grid-cols-2">
-                <input name="evento" value={form.evento} onChange={handleChange} required placeholder="Nome do evento" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <select name="tipo_evento" value={form.tipo_evento} onChange={handleChange} className="input-dark rounded-xl px-4 py-3 text-sm">
-                  <option value="">Tipo de evento</option>
-                  <option value="show">Show</option>
-                  <option value="festival">Festival</option>
-                  <option value="turne">Turnê</option>
-                  <option value="venue">Casa de show / venue</option>
-                  <option value="corporativo">Evento corporativo</option>
-                  <option value="outro">Outro</option>
-                </select>
-                <input name="data_evento" type="date" value={form.data_evento} onChange={handleChange} required className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="venue" value={form.venue} onChange={handleChange} placeholder="Venue/local do evento" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="cidade" value={form.cidade} onChange={handleChange} placeholder="Cidade" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="estado" value={form.estado} onChange={handleChange} placeholder="UF" maxLength={2} className="input-dark rounded-xl px-4 py-3 text-sm" />
-              </div>
+              <fieldset>
+                <legend className="mb-5 font-serif text-2xl">Evento</legend>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <input name="evento" value={form.evento} onChange={handleChange} required placeholder="Nome do evento *" className={fieldClass} />
+                  <select name="tipo_evento" value={form.tipo_evento} onChange={handleChange} className={fieldClass}>
+                    <option value="">Tipo de evento</option>
+                    <option value="show">Show</option>
+                    <option value="festival">Festival</option>
+                    <option value="turne">Turnê</option>
+                    <option value="venue">Operação recorrente de venue</option>
+                    <option value="corporativo">Corporativo</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                  <input name="data_evento" type="date" value={form.data_evento} onChange={handleChange} required className={fieldClass} />
+                  <input name="venue" value={form.venue} onChange={handleChange} placeholder="Local / venue" className={fieldClass} />
+                  <input name="cidade" value={form.cidade} onChange={handleChange} placeholder="Cidade" className={fieldClass} />
+                  <input name="estado" value={form.estado} onChange={handleChange} maxLength={2} placeholder="UF" className={fieldClass} />
+                  <input name="plataforma_ingressos" value={form.plataforma_ingressos} onChange={handleChange} placeholder="Plataforma de ingressos" className={fieldClass} />
+                  <input name="link_venda" type="url" value={form.link_venda} onChange={handleChange} placeholder="Link de venda ou evidência pública" className={fieldClass} />
+                </div>
+              </fieldset>
 
-              <div className="grid gap-5 md:grid-cols-3">
-                <input name="valor_ingressos" type="number" value={form.valor_ingressos} onChange={handleChange} required placeholder="Receita já vendida (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="receita_esperada" type="number" value={form.receita_esperada} onChange={handleChange} placeholder="Receita esperada (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="valor_solicitado" type="number" value={form.valor_solicitado} onChange={handleChange} placeholder="Valor solicitado (R$)" className="input-dark rounded-xl px-4 py-3 text-sm" />
-              </div>
+              <fieldset>
+                <legend className="mb-5 font-serif text-2xl">Operação pretendida</legend>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <input name="valor_ingressos" type="number" min="0" max="50000000" value={form.valor_ingressos} onChange={handleChange} placeholder="Receita já vendida (R$)" className={fieldClass} />
+                  <input name="receita_esperada" type="number" min="0" max="50000000" value={form.receita_esperada} onChange={handleChange} placeholder="Receita esperada (R$)" className={fieldClass} />
+                  <input name="valor_solicitado" type="number" min="0" max="50000000" value={form.valor_solicitado} onChange={handleChange} placeholder="Valor solicitado (R$)" className={fieldClass} />
+                  <select name="urgencia" value={form.urgencia} onChange={handleChange} className={fieldClass}>
+                    <option value="">Quando precisa do recurso?</option>
+                    <option value="ate_7_dias">Até 7 dias</option>
+                    <option value="8_a_15_dias">8 a 15 dias</option>
+                    <option value="16_a_30_dias">16 a 30 dias</option>
+                    <option value="mais_30_dias">Mais de 30 dias</option>
+                  </select>
+                  <input name="como_conheceu" value={form.como_conheceu} onChange={handleChange} placeholder="Como conheceu a Palco Capital?" className={`${fieldClass} md:col-span-2`} />
+                  <textarea name="destino_recurso" value={form.destino_recurso} onChange={handleChange} rows={3} placeholder="Como o recurso será utilizado?" className={`${fieldClass} md:col-span-3`} />
+                </div>
+              </fieldset>
 
-              <div className="grid gap-5 md:grid-cols-2">
-                <input name="plataforma_ingressos" value={form.plataforma_ingressos} onChange={handleChange} placeholder="Plataforma de ingressos" className="input-dark rounded-xl px-4 py-3 text-sm" />
-                <input name="link_venda" value={form.link_venda} onChange={handleChange} placeholder="Link de venda/evidência pública" className="input-dark rounded-xl px-4 py-3 text-sm" />
-              </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#F7F7F4]/10 bg-[#102842]/60 p-5 text-sm leading-relaxed text-[#F7F7F4]/60">
+                <input
+                  name="consentimento_lgpd"
+                  type="checkbox"
+                  checked={form.consentimento_lgpd}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 h-4 w-4 accent-[#B08A43]"
+                />
+                <span>
+                  Autorizo a Palco Capital a utilizar os dados informados para analisar esta
+                  solicitação e entrar em contato sobre a operação. *
+                </span>
+              </label>
 
-              <select name="como_conheceu" value={form.como_conheceu} onChange={handleChange} className="input-dark w-full rounded-xl px-4 py-3 text-sm">
-                <option value="">Como chegou até a Palco Capital?</option>
-                <option value="indicacao">Indicação</option>
-                <option value="google">Google</option>
-                <option value="instagram">Instagram</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="outro">Outro</option>
-              </select>
-              {status === "error" && <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">{message}</div>}
-              <button type="submit" disabled={status === "loading"} className="btn-gold w-full rounded-xl py-4 disabled:opacity-50">{status === "loading" ? "Enviando..." : "Enviar para triagem →"}</button>
-              <p className="text-center text-xs text-[#F7F7F4]/32">Envio sem compromisso. Sujeito à elegibilidade, documentação, análise de crédito e aprovação interna.</p>
+              {status === "error" && (
+                <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-200">
+                  {message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="btn-gold w-full rounded-xl py-4 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {status === "loading" ? "Enviando..." : "Enviar para triagem"}
+              </button>
             </form>
           )}
         </div>
       </section>
 
       <footer className="border-t border-[#F7F7F4]/10 px-6 py-10 text-center text-xs text-[#F7F7F4]/35">
-        © 2026 Palco Capital. Crédito privado e antecipação de recebíveis para eventos no Brasil.
+        © 2026 Palco Capital. Crédito privado para o mercado brasileiro de eventos ao vivo.
       </footer>
     </main>
   );
