@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint, intake contract and build
+    name: Audit, lint, intake contract and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -28,16 +28,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit dependencies
+        run: |
+          npm audit --json > npm-audit.json || true
+          node scripts/summarize-npm-audit.mjs npm-audit.json
 
       - name: Validate intake contract
         run: npm run check:intake
