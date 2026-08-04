@@ -49,7 +49,11 @@ CNPJ informado: ${lead.cnpj ? "Sim" : "Não"}
 Origem do lead: ${lead.origem || "site"}
 Score anterior: ${lead.score || "Sem score"}`;
 
-  const { text, tokens, duracao_ms } = await callClaude(SYSTEM, [{ role: "user", content: prompt }], 500);
+  const { text, tokens } = await callClaude(
+    SYSTEM,
+    [{ role: "user", content: prompt }],
+    500,
+  );
 
   let analise: Record<string, unknown>;
   try {
@@ -61,7 +65,6 @@ Score anterior: ${lead.score || "Sem score"}`;
 
   const escalado = analise.decisao === "escalado" || valorSolicitado > 500000;
 
-  // Salvar análise
   const [analiseRecord] = await supaPost("analises_credito", {
     lead_id: leadId,
     nome_evento: lead.evento || lead.tipo_evento,
@@ -79,14 +82,12 @@ Score anterior: ${lead.score || "Sem score"}`;
     status: analise.decisao === "reprovado" ? "reprovado" : "em_analise",
   });
 
-  // Atualizar lead
   await supaPatch("leads", `?id=eq.${leadId}`, {
     score: analise.score,
     status: analise.decisao === "reprovado" ? "descartado" : "qualificado",
     notas: analise.justificativa,
   });
 
-  // Escalar ao Chairman
   if (escalado) {
     await supaPost("escalacoes", {
       tipo: "aprovacao_credito",
