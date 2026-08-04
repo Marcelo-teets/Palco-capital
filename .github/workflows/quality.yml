@@ -46,7 +46,7 @@ jobs:
 
       - name: Prepare compatible dependency fixes
         run: |
-          npm install next@16.3.0 --save-exact --package-lock-only
+          npm install next@16.3.0 eslint-config-next@16.3.0 --save-exact --package-lock-only
           npm audit fix --package-lock-only
           npm ci
 
